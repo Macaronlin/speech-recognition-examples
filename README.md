@@ -1,1 +1,1 @@
-# speech-command-recognition
+## LibriSpeech Dataset Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
