@@ -11,9 +11,9 @@ class CNN(nn.Module):
 
     def __init__(self, time_step):
         super(CNN, self).__init__()
-        resnet18network = models.resnet34()
-        resnet18network.load_state_dict(load_url('https://download.pytorch.org/models/resnet34-333f7ec4.pth'))
-        resnet18network.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        resnet18network = models.resnet18()
+        resnet18network.load_state_dict(load_url('https://download.pytorch.org/models/resnet18-5c106cde.pth'))
+        resnet18network.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.network = torch.nn.Sequential(*(list(resnet18network.children())[:-2]))
         self.avgpool = nn.AdaptiveAvgPool2d(output_size=(time_step, 1))
 
@@ -46,7 +46,7 @@ class IAMModel(nn.Module):
         self.rnn = RNN(feature_size=feature_size, hidden_size=hidden_size, output_size=output_size, num_layers=num_rnn_layers)
         self.time_step = time_step
         self.alphabet = Alphabet(os.path.abspath("chars.txt"))
-        self.scorer = Scorer(alphabet=self.alphabet, scorer_path='iam_uncased.scorer', alpha=0.75, beta=1.85)
+        # self.scorer = Scorer(alphabet=self.alphabet, scorer_path=None, alpha=0.75, beta=1.85)
 
     def forward(self, xb):
         xb = xb.float()
@@ -62,5 +62,5 @@ class IAMModel(nn.Module):
             softmax_out = out.permute(1, 0, 2).cpu().numpy()
             char_list = []
             for i in range(softmax_out.shape[0]):
-                char_list.append(ctc_beam_search_decoder(probs_seq=softmax_out[i, :], alphabet=self.alphabet, beam_size=25, scorer=self.scorer)[0][1])
+                char_list.append(ctc_beam_search_decoder(probs_seq=softmax_out[i, :], alphabet=self.alphabet, beam_size=25)[0][1])
         return char_list
