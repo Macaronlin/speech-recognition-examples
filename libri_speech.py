@@ -138,7 +138,7 @@ train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=Tr
 validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False, collate_fn=lambda x: data_processing(x, 'valid'), pin_memory=True)
 print("Training...")
 # model.load_state_dict(torch.load('./171_1224381060633_model.pth'))
-fit(model=model, epochs=2, train_data_loader=train_loader, valid_data_loader=validation_loader)
+fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================
