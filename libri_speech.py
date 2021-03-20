@@ -14,8 +14,10 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from deep_speech_mode import SpeechRecognitionModel
 from model import IAMModel
 from preprocessing import text_transform, valid_audio_transforms, train_audio_transforms
+import torch.nn.functional as F
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -49,7 +51,7 @@ def data_processing(data, data_type="train"):
         spectrograms.append(spec)
         label = torch.Tensor(text_transform.text_to_int(utterance.lower()))
         labels.append(label)
-        input_lengths.append(spec.shape[0]//2)
+        input_lengths.append(spec.shape[0] // 2)
         label_lengths.append(len(label))
 
     spectrograms = nn.utils.rnn.pad_sequence(spectrograms, batch_first=True).unsqueeze(1).transpose(2, 3)
@@ -59,22 +61,19 @@ def data_processing(data, data_type="train"):
 
 
 # ================================================= MODEL ==============================================================
-model = IAMModel(time_step=4096,
-                 feature_size=512,
-                 hidden_size=512,
-                 output_size=len(classes) + 1,
-                 num_rnn_layers=2)
+model = SpeechRecognitionModel(n_cnn_layers=3, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128,
+                               stride=2, dropout=0.1)
 model.to(dev)
 
 
 # ================================================ TRAINING MODEL ======================================================
-def fit(model, epochs, train_data_loader, valid_data_loader, lr=5e-4, wd=1e-2, betas=(0.9, 0.999)):
+def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, betas=(0.9, 0.999)):
     best_leven = 1000
-    opt = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr,
-                     weight_decay=wd, betas=betas)
+    opt = opt = optim.Adam(model.parameters(), lr=lr,
+                           weight_decay=wd, betas=betas)
     opt.zero_grad(set_to_none=False)
     len_train = len(train_data_loader)
-    loss_func = nn.CTCLoss(reduction='sum', zero_infinity=True, blank=len(classes))
+    loss_func = nn.CTCLoss(blank=len(classes)).to(dev)
     for i in range(1, epochs + 1):
         # ============================================ TRAINING ========================================================
         batch_n = 1
@@ -82,13 +81,18 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=5e-4, wd=1e-2, b
         train_levenshtein = 0
         len_levenshtein = 0
         for spectrograms, labels, input_lengths, label_lengths in tqdm(train_data_loader,
-                                 position=0, leave=True,
-                                 file=sys.stdout, bar_format="{l_bar}%s{bar}%s{r_bar}" % (Fore.GREEN, Fore.RESET)):
+                                                                       position=0, leave=True,
+                                                                       file=sys.stdout,
+                                                                       bar_format="{l_bar}%s{bar}%s{r_bar}" % (
+                                                                               Fore.GREEN, Fore.RESET)):
             model.train()
             spectrograms, labels = spectrograms.to(dev), labels.to(dev)
+            output = model(spectrograms)
+            output = F.log_softmax(output, dim=2)
+            output = output.transpose(0, 1)
             # And the lengths are specified for each sequence to achieve masking
             # under the assumption that sequences are padded to equal lengths.
-            loss = loss_func(model(spectrograms).log_softmax(2).requires_grad_(), labels, input_lengths, label_lengths)
+            loss = loss_func(output, labels, input_lengths, label_lengths)
             loss.backward()
             opt.step()
             opt.zero_grad(set_to_none=False)
@@ -113,10 +117,15 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=5e-4, wd=1e-2, b
             val_levenshtein = 0
             target_lengths = 0
             for spectrograms, labels, input_lengths, label_lengths in tqdm(valid_data_loader,
-                                     position=0, leave=True,
-                                     file=sys.stdout, bar_format="{l_bar}%s{bar}%s{r_bar}" % (Fore.BLUE, Fore.RESET)):
+                                                                           position=0, leave=True,
+                                                                           file=sys.stdout,
+                                                                           bar_format="{l_bar}%s{bar}%s{r_bar}" % (
+                                                                                   Fore.BLUE, Fore.RESET)):
                 spectrograms, labels = spectrograms.to(dev), labels.to(dev)
-                valid_loss += loss_func(model(spectrograms), labels, input_lengths, label_lengths)
+                output = model(spectrograms)
+                output = F.log_softmax(output, dim=2)
+                output = output.transpose(0, 1)
+                valid_loss += loss_func(output, labels, input_lengths, label_lengths)
                 decoded = model.beam_search_with_lm(spectrograms)
                 for j in range(0, len(decoded)):
                     actual = text_transform.int_to_text(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
@@ -127,18 +136,21 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=5e-4, wd=1e-2, b
               .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths), end='\n')
         # ============================================ SAVE MODEL ======================================================
         if (val_levenshtein / target_lengths) < best_leven:
-            torch.save(model.state_dict(), f=str((val_levenshtein / target_lengths) * 100).replace('.', '_') + '_' + 'model.pth')
+            torch.save(model.state_dict(),
+                       f=str((val_levenshtein / target_lengths) * 100).replace('.', '_') + '_' + 'model.pth')
             best_leven = val_levenshtein / target_lengths
 
 
 train_batch_size = 40
 validation_batch_size = 20
 torch.manual_seed(7)
-train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, collate_fn=lambda x: data_processing(x, 'train'), pin_memory=True)
-validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False, collate_fn=lambda x: data_processing(x, 'valid'), pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True,
+                          collate_fn=lambda x: data_processing(x, 'train'), pin_memory=True)
+validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False,
+                               collate_fn=lambda x: data_processing(x, 'valid'), pin_memory=True)
 print("Training...")
 # model.load_state_dict(torch.load('./171_1224381060633_model.pth'))
-fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
+# fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================
