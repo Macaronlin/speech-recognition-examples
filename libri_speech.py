@@ -13,7 +13,6 @@ from skimage.transform import rotate
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
 from deep_speech_mode import SpeechRecognitionModel
 from model import IAMModel
 from preprocessing import text_transform, valid_audio_transforms, train_audio_transforms
@@ -67,11 +66,13 @@ model.to(dev)
 
 
 # ================================================ TRAINING MODEL ======================================================
-def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, betas=(0.9, 0.999)):
+def fit(model, epochs, train_data_loader, valid_data_loader):
     best_leven = 1000
-    opt = opt = optim.Adam(model.parameters(), lr=lr,
-                           weight_decay=wd, betas=betas)
-    opt.zero_grad(set_to_none=False)
+    optimizer = optim.AdamW(model.parameters(), 5e-4)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=5e-4,
+                                                    steps_per_epoch=int(len(train_loader)),
+                                                    epochs=epochs,
+                                                    anneal_strategy='linear')
     len_train = len(train_data_loader)
     loss_func = nn.CTCLoss(blank=len(classes)).to(dev)
     for i in range(1, epochs + 1):
@@ -87,6 +88,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, b
                                                                                Fore.GREEN, Fore.RESET)):
             model.train()
             spectrograms, labels = spectrograms.to(dev), labels.to(dev)
+            optimizer.zero_grad()
             output = model(spectrograms)
             output = F.log_softmax(output, dim=2)
             output = output.transpose(0, 1)
@@ -94,8 +96,8 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, b
             # under the assumption that sequences are padded to equal lengths.
             loss = loss_func(output, labels, input_lengths, label_lengths)
             loss.backward()
-            opt.step()
-            opt.zero_grad(set_to_none=False)
+            optimizer.step()
+            scheduler.step()
             # ================================== TRAINING LEVENSHTEIN DISTANCE =========================================
             if batch_n > (len_train - 5):
                 model.eval()
@@ -104,12 +106,11 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, b
                     for j in range(0, len(decoded)):
                         # We need to find actual string somewhere in the middle of the 'targets'
                         # tensor having tensor 'lens' with known lengths
-                        actual = text_transform.int_to_text(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
-                        train_levenshtein += leven.distance(''.join([letter for letter in decoded[j]]), actual)
-                    len_levenshtein += sum(label_lengths)
+                        actual = text_transform.int_to_text(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                        train_levenshtein += leven.distance(decoded[j], actual)
+                        len_levenshtein += label_lengths[j]
 
             batch_n += 1
-
         # ============================================ VALIDATION ======================================================
         model.eval()
         with torch.no_grad():
@@ -128,9 +129,9 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, b
                 valid_loss += loss_func(output, labels, input_lengths, label_lengths)
                 decoded = model.beam_search_with_lm(spectrograms)
                 for j in range(0, len(decoded)):
-                    actual = text_transform.int_to_text(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
-                    val_levenshtein += leven.distance(''.join([letter for letter in decoded[j]]), actual)
-                target_lengths += sum(label_lengths)
+                    actual = text_transform.int_to_text(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                    val_levenshtein += leven.distance(decoded[j], actual)
+                    target_lengths += label_lengths[j]
 
         print('epoch {}: Train Levenshtein {} | Validation Levenshtein {}'
               .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths), end='\n')
@@ -142,15 +143,15 @@ def fit(model, epochs, train_data_loader, valid_data_loader, lr=1e-3, wd=1e-2, b
 
 
 train_batch_size = 40
-validation_batch_size = 20
+validation_batch_size = 40
 torch.manual_seed(7)
 train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True,
                           collate_fn=lambda x: data_processing(x, 'train'), pin_memory=True)
 validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False,
                                collate_fn=lambda x: data_processing(x, 'valid'), pin_memory=True)
 print("Training...")
-# model.load_state_dict(torch.load('./171_1224381060633_model.pth'))
-# fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
+# model.load_state_dict(torch.load('./10__best_model.pth'))
+fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================
@@ -164,7 +165,7 @@ def batch_predict(model, valid_dl, up_to):
             # start = sum(lens[:i])
             # end = lens[i].item()
             actual = text_transform.int_to_text(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
-            predicted = ''.join([letter for letter in outs[i]])
+            predicted = outs[i]
             # ============================================ SHOW IMAGE ==================================================
             # img = xb[i, :, :, :].permute(1, 2, 0).cpu().numpy()
             # img = rgb2gray(img)

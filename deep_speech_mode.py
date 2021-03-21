@@ -1,14 +1,12 @@
 import os
 
 import torch
+import torch.nn.functional as F
 from ds_ctcdecoder import Alphabet, ctc_beam_search_decoder
 from torch import nn
-import torch.nn.functional as F
-from itertools import groupby
+
 
 class CNNLayerNorm(nn.Module):
-    """Layer normalization built for cnns input"""
-
     def __init__(self, n_feats):
         super(CNNLayerNorm, self).__init__()
         self.layer_norm = nn.LayerNorm(n_feats)
@@ -21,10 +19,6 @@ class CNNLayerNorm(nn.Module):
 
 
 class ResidualCNN(nn.Module):
-    """Residual CNN inspired by https://arxiv.org/pdf/1603.05027.pdf
-        except with layer norm instead of batch norm
-    """
-
     def __init__(self, in_channels, out_channels, kernel, stride, dropout, n_feats):
         super(ResidualCNN, self).__init__()
 
