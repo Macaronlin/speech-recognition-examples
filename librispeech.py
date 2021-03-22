@@ -25,10 +25,10 @@ classes = "' abcdefghijklmnopqrstuvwxyz"
 
 # ============================================= TRANSFORMATIONS ========================================================
 audio_transforms = torchaudio.transforms.MelSpectrogram()
-char_map = {c: i for i, c in enumerate(list(classes))}
-index_map = {v: k for k, v in char_map.items()}
-text_to_int = lambda text: [char_map[c] for c in text]
-int_to_text = lambda labels: ''.join([index_map[i] for i in labels])
+num_to_char_map = {c: i for i, c in enumerate(list(classes))}
+char_to_num_map = {v: k for k, v in num_to_char_map.items()}
+str_to_num = lambda text: [num_to_char_map[c] for c in text]
+num_to_str = lambda labels: ''.join([char_to_num_map[i] for i in labels])
 
 # ============================================= ALPHABET FILE ==========================================================
 text_file = open("chars.txt", "w", encoding='utf-8')
@@ -39,7 +39,7 @@ text_file.close()
 # ============================================= COLLATE FUNCTION =======================================================
 def collate(data):
     spectrograms = [audio_transforms(waveform).squeeze(0).permute(1, 0) for (waveform, _, utterance, _, _, _) in data]
-    labels = [torch.Tensor(text_to_int(utterance.lower())) for (waveform, _, utterance, _, _, _) in data]
+    labels = [torch.Tensor(str_to_num(utterance.lower())) for (waveform, _, utterance, _, _, _) in data]
     input_lengths = [spec.shape[0] // 2 for spec in spectrograms]
     label_lengths = [len(label) for label in labels]
     spectrograms = nn.utils.rnn.pad_sequence(spectrograms, batch_first=True).unsqueeze(1).permute(0, 1, 3, 2)
@@ -54,8 +54,7 @@ torch.manual_seed(7)
 train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, collate_fn=collate, pin_memory=True)
 validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False, collate_fn=collate, pin_memory=True)
 # ================================================= MODEL ==============================================================
-model = SpeechRecognitionModel(n_cnn_layers=3, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128,
-                               stride=2, dropout=0.1).to(dev)
+model = SpeechRecognitionModel(n_cnn_layers=3, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128).to(dev)
 
 
 # ================================================ TRAINING MODEL ======================================================
@@ -90,7 +89,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                 with torch.no_grad():
                     decoded = model.beam_search_with_lm(spectrograms)
                     for j in range(0, len(decoded)):
-                        actual = int_to_text(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                        actual = num_to_str(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
                         train_levenshtein += leven.distance(decoded[j], actual)
                         len_levenshtein += label_lengths[j]
 
@@ -108,7 +107,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                 spectrograms, labels = spectrograms.to(dev), labels.to(dev)
                 decoded = model.beam_search_with_lm(spectrograms)
                 for j in range(0, len(decoded)):
-                    actual = int_to_text(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                    actual = num_to_str(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
                     val_levenshtein += leven.distance(decoded[j], actual)
                     target_lengths += label_lengths[j]
 
@@ -122,6 +121,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
 
 summary(model, (1, 128, 1344))
 print("Training...")
+# model.load_state_dict(torch.load('./13_82801122438106_model.pth'))
 fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
@@ -133,17 +133,17 @@ def batch_predict(model, valid_dl, up_to):
     with torch.no_grad():
         outs = model.beam_search_with_lm(spectrograms)
         for i in range(len(outs)):
-            actual = int_to_text(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
+            actual = num_to_str(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
             predicted = outs[i]
             # ============================================ SHOW IMAGE ==================================================
             img = spectrograms.log2()[i, :, :, :].permute(1, 2, 0).cpu().numpy()
             f, ax = plt.subplots(1, 1)
             mpl.rcParams["font.size"] = 8
             ax.imshow(img)
-            mpl.rcParams["font.size"] = 14
+            mpl.rcParams["font.size"] = 10
             plt.gcf().text(x=0.1, y=0.1, s="Actual: " + str(actual))
             plt.gcf().text(x=0.1, y=0.2, s="Predicted: " + str(predicted))
-            f.set_size_inches(10, 3)
+            f.set_size_inches(18, 4)
             print('actual: {}'.format(actual))
             print('predicted:   {}'.format(predicted))
             if i + 1 == up_to:
