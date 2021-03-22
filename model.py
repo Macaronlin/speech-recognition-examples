@@ -8,16 +8,14 @@ from torch import nn
 class CNN(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, n_feats):
         super(CNN, self).__init__()
-        self.layer_norm = nn.LayerNorm(n_feats)
+        self.norm = nn.LayerNorm(n_feats)
         self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.1)
-        self.cnn = nn.Conv2d(in_channels, out_channels, kernel, padding=kernel // 2)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel, padding=kernel // 2)
 
     def forward(self, x):
-        x = x.permute(0, 1, 3, 2)
-        x = self.layer_norm(x)
-        x = x.permute(0, 1, 3, 2)
-        return self.cnn(self.dropout(self.gelu(x)))
+        x = self.norm(x.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
+        return self.conv(self.dropout(self.gelu(x)))
 
 
 class ResidualCNN(nn.Module):
@@ -33,45 +31,45 @@ class ResidualCNN(nn.Module):
 class RNN(nn.Module):
     def __init__(self, rnn_dim, hidden_size, dropout, batch_first):
         super(RNN, self).__init__()
-        self.layer_norm = nn.LayerNorm(rnn_dim)
+        self.norm = nn.LayerNorm(rnn_dim)
         self.gelu = nn.GELU()
         self.gru = nn.GRU(input_size=rnn_dim, hidden_size=hidden_size, num_layers=1, batch_first=batch_first, bidirectional=True)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        x, _ = self.gru(self.gelu(self.layer_norm(x)))
+        x, _ = self.gru(self.gelu(self.norm(x)))
         return self.dropout(x)
 
 
 class SpeechRecognitionModel(nn.Module):
-    def __init__(self, n_cnn_layers, n_rnn_layers, rnn_dim, n_class, n_feats, stride=2, dropout=0.1):
+    def __init__(self, n_cnn_layers, n_rnn_layers, rnn_dim, n_class, n_feats):
         super(SpeechRecognitionModel, self).__init__()
         n_feats = n_feats // 2
-        self.cnn = nn.Conv2d(1, 32, 3, stride=stride, padding=1)
-        self.cnn_layers = nn.Sequential(*[
+        self.cnn = nn.Conv2d(1, 32, 3, stride=2, padding=1)
+        self.res_cnn = nn.Sequential(*[
             ResidualCNN(32, 32, kernel=3, n_feats=n_feats)
             for _ in range(n_cnn_layers)
         ])
-        self.fully_connected = nn.Linear(n_feats * 32, rnn_dim)
-        self.rnn_layers = nn.Sequential(*[
-            RNN(rnn_dim=rnn_dim if i == 0 else rnn_dim * 2, hidden_size=rnn_dim, dropout=dropout, batch_first=i == 0)
+        self.fc = nn.Linear(n_feats * 32, rnn_dim)
+        self.rnn = nn.Sequential(*[
+            RNN(rnn_dim=rnn_dim if i == 0 else rnn_dim * 2, hidden_size=rnn_dim, dropout=0.1, batch_first=i == 0)
             for i in range(n_rnn_layers)
         ])
-        self.classifier = nn.Sequential(
+        self.dense = nn.Sequential(
             nn.Linear(rnn_dim * 2, rnn_dim),
             nn.GELU(),
-            nn.Dropout(dropout),
+            nn.Dropout(0.1),
             nn.Linear(rnn_dim, n_class)
         )
         self.alphabet = Alphabet(os.path.abspath("chars.txt"))
         self.scorer = Scorer(alphabet=self.alphabet, scorer_path='librispeech.scorer', alpha=0.75, beta=1.85)
 
     def forward(self, x):
-        x = self.cnn_layers(self.cnn(x))
+        x = self.res_cnn(self.cnn(x))
         sizes = x.size()
         x = x.view(sizes[0], sizes[1] * sizes[2], sizes[3])
         x = x.permute(0, 2, 1)
-        return self.classifier(self.rnn_layers(self.fully_connected(x)))
+        return self.dense(self.rnn(self.fc(x)))
 
     def beam_search_with_lm(self, xb):
         with torch.no_grad():

@@ -111,7 +111,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                     val_levenshtein += leven.distance(decoded[j], actual)
                     target_lengths += label_lengths[j]
 
-        print('epoch {}: Train Levenshtein {} | Validation Levenshtein {}'
+        print('Epoch {}: Training Levenshtein {} | Validation Levenshtein {}'
               .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths), end='\n')
         # ============================================ SAVE MODEL ======================================================
         if (val_levenshtein / target_lengths) < best_leven:
@@ -121,19 +121,17 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
 
 summary(model, (1, 128, 1344))
 print("Training...")
-# model.load_state_dict(torch.load('./13_82801122438106_model.pth'))
 fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================
 def batch_predict(model, valid_dl, up_to):
-    spectrograms, labels, input_lengths, label_lengths = iter(valid_dl).next()
     model.eval()
-    spectrograms, labels = spectrograms.to(dev), labels.to(dev)
+    spectrograms, labels, input_lengths, label_lengths = iter(valid_dl).next()
     with torch.no_grad():
-        outs = model.beam_search_with_lm(spectrograms)
+        outs = model.beam_search_with_lm(spectrograms.to(dev))
         for i in range(len(outs)):
-            actual = num_to_str(labels.cpu().numpy()[i][:label_lengths[i]].tolist())
+            actual = num_to_str(labels.numpy()[i][:label_lengths[i]].tolist())
             predicted = outs[i]
             # ============================================ SHOW IMAGE ==================================================
             img = spectrograms.log2()[i, :, :, :].permute(1, 2, 0).cpu().numpy()
