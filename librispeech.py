@@ -61,10 +61,6 @@ model = SpeechRecognitionModel(n_cnn_layers=3, n_rnn_layers=5, rnn_dim=512, n_cl
 def fit(model, epochs, train_data_loader, valid_data_loader):
     best_leven = 1000
     optimizer = optim.AdamW(model.parameters(), 5e-4)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=5e-4,
-                                                    steps_per_epoch=int(len(train_loader)),
-                                                    epochs=epochs,
-                                                    anneal_strategy='linear')
     len_train = len(train_data_loader)
     loss_func = nn.CTCLoss(blank=len(classes)).to(dev)
     for i in range(1, epochs + 1):
@@ -82,7 +78,6 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
             optimizer.zero_grad()
             loss_func(model(spectrograms).log_softmax(2).permute(1, 0, 2), labels, input_lengths, label_lengths).backward()
             optimizer.step()
-            scheduler.step()
             # ================================== TRAINING LEVENSHTEIN DISTANCE =========================================
             if batch_n > (len_train - 5):
                 model.eval()
