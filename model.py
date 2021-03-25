@@ -5,39 +5,29 @@ from ds_ctcdecoder import Alphabet, ctc_beam_search_decoder, Scorer
 from torch import nn
 
 
-class CNN(nn.Module):
+class ResidualCNN(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, n_feats):
-        super(CNN, self).__init__()
+        super(ResidualCNN, self).__init__()
         self.norm = nn.LayerNorm(n_feats)
-        self.gelu = nn.GELU()
-        self.dropout = nn.Dropout(0.1)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.2)
         self.conv = nn.Conv2d(in_channels, out_channels, kernel, padding=kernel // 2)
 
     def forward(self, x):
         x = self.norm(x.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
-        return self.conv(self.dropout(self.gelu(x)))
-
-
-class ResidualCNN(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel, n_feats):
-        super(ResidualCNN, self).__init__()
-        self.cnn1 = CNN(in_channels, out_channels, kernel, n_feats)
-        self.cnn2 = CNN(out_channels, out_channels, kernel, n_feats)
-
-    def forward(self, x):
-        return self.cnn2(self.cnn1(x)) + x
+        return self.conv(self.dropout(self.relu(x))) + x
 
 
 class RNN(nn.Module):
-    def __init__(self, rnn_dim, hidden_size, dropout, batch_first):
+    def __init__(self, rnn_dim, hidden_size, batch_first):
         super(RNN, self).__init__()
         self.norm = nn.LayerNorm(rnn_dim)
-        self.gelu = nn.GELU()
+        self.relu = nn.ReLU()
         self.gru = nn.GRU(input_size=rnn_dim, hidden_size=hidden_size, num_layers=1, batch_first=batch_first, bidirectional=True)
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
-        x, _ = self.gru(self.gelu(self.norm(x)))
+        x, _ = self.gru(self.relu(self.norm(x)))
         return self.dropout(x)
 
 
@@ -52,13 +42,13 @@ class SpeechRecognitionModel(nn.Module):
         ])
         self.fc = nn.Linear(n_feats * 32, rnn_dim)
         self.rnn = nn.Sequential(*[
-            RNN(rnn_dim=rnn_dim if i == 0 else rnn_dim * 2, hidden_size=rnn_dim, dropout=0.1, batch_first=i == 0)
+            RNN(rnn_dim=rnn_dim if i == 0 else rnn_dim * 2, hidden_size=rnn_dim, batch_first=i == 0)
             for i in range(n_rnn_layers)
         ])
         self.dense = nn.Sequential(
             nn.Linear(rnn_dim * 2, rnn_dim),
-            nn.GELU(),
-            nn.Dropout(0.1),
+            nn.ReLU(),
+            nn.Dropout(0.2),
             nn.Linear(rnn_dim, n_class)
         )
         self.alphabet = Alphabet(os.path.abspath("chars.txt"))

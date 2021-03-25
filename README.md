@@ -1,89 +1,81 @@
 ## LibriSpeech Dataset Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
 
 ### Architecture
-```
-----------------------------------------------------------------
-        Layer (type)               Output Shape         Param #
-================================================================
-            Conv2d-1          [-1, 32, 64, 672]             320
-         LayerNorm-2          [-1, 32, 672, 64]             128
-              GELU-3          [-1, 32, 64, 672]               0
-           Dropout-4          [-1, 32, 64, 672]               0
-            Conv2d-5          [-1, 32, 64, 672]           9,248
-               CNN-6          [-1, 32, 64, 672]               0
-         LayerNorm-7          [-1, 32, 672, 64]             128
-              GELU-8          [-1, 32, 64, 672]               0
-           Dropout-9          [-1, 32, 64, 672]               0
-           Conv2d-10          [-1, 32, 64, 672]           9,248
-              CNN-11          [-1, 32, 64, 672]               0
-      ResidualCNN-12          [-1, 32, 64, 672]               0
-        LayerNorm-13          [-1, 32, 672, 64]             128
-             GELU-14          [-1, 32, 64, 672]               0
-          Dropout-15          [-1, 32, 64, 672]               0
-           Conv2d-16          [-1, 32, 64, 672]           9,248
-              CNN-17          [-1, 32, 64, 672]               0
-        LayerNorm-18          [-1, 32, 672, 64]             128
-             GELU-19          [-1, 32, 64, 672]               0
-          Dropout-20          [-1, 32, 64, 672]               0
-           Conv2d-21          [-1, 32, 64, 672]           9,248
-              CNN-22          [-1, 32, 64, 672]               0
-      ResidualCNN-23          [-1, 32, 64, 672]               0
-        LayerNorm-24          [-1, 32, 672, 64]             128
-             GELU-25          [-1, 32, 64, 672]               0
-          Dropout-26          [-1, 32, 64, 672]               0
-           Conv2d-27          [-1, 32, 64, 672]           9,248
-              CNN-28          [-1, 32, 64, 672]               0
-        LayerNorm-29          [-1, 32, 672, 64]             128
-             GELU-30          [-1, 32, 64, 672]               0
-          Dropout-31          [-1, 32, 64, 672]               0
-           Conv2d-32          [-1, 32, 64, 672]           9,248
-              CNN-33          [-1, 32, 64, 672]               0
-      ResidualCNN-34          [-1, 32, 64, 672]               0
-           Linear-35             [-1, 672, 512]       1,049,088
-        LayerNorm-36             [-1, 672, 512]           1,024
-             GELU-37             [-1, 672, 512]               0
-              GRU-38           [[-1, 672, 1024], 
-                                   [-1, 2, 512]]              0
-          Dropout-39            [-1, 672, 1024]               0
-              RNN-40            [-1, 672, 1024]               0
-        LayerNorm-41            [-1, 672, 1024]           2,048
-             GELU-42            [-1, 672, 1024]               0
-              GRU-43           [[-1, 672, 1024],
-                                 [-1, 672, 512]]              0
-          Dropout-44            [-1, 672, 1024]               0
-              RNN-45            [-1, 672, 1024]               0
-        LayerNorm-46            [-1, 672, 1024]           2,048
-             GELU-47            [-1, 672, 1024]               0
-              GRU-48           [[-1, 672, 1024], 
-                                 [-1, 672, 512]]              0
-          Dropout-49            [-1, 672, 1024]               0
-              RNN-50            [-1, 672, 1024]               0
-        LayerNorm-51            [-1, 672, 1024]           2,048
-             GELU-52            [-1, 672, 1024]               0
-              GRU-53           [[-1, 672, 1024], 
-                                 [-1, 672, 512]]              0
-          Dropout-54            [-1, 672, 1024]               0
-              RNN-55            [-1, 672, 1024]               0
-        LayerNorm-56            [-1, 672, 1024]           2,048
-             GELU-57            [-1, 672, 1024]               0
-              GRU-58           [[-1, 672, 1024], 
-                                 [-1, 672, 512]]              0
-          Dropout-59            [-1, 672, 1024]               0
-              RNN-60            [-1, 672, 1024]               0
-           Linear-61             [-1, 672, 512]         524,800
-             GELU-62             [-1, 672, 512]               0
-          Dropout-63             [-1, 672, 512]               0
-           Linear-64              [-1, 672, 29]          14,877
-================================================================
-Total params: 1,654,557
-Trainable params: 1,654,557
-Non-trainable params: 0
-----------------------------------------------------------------
-Input size (MB): 0.66
-Forward/backward pass size (MB): 11475.40
-Params size (MB): 6.31
-Estimated Total Size (MB): 11482.37
-----------------------------------------------------------------
+```sh
+SpeechRecognitionModel(
+  (cnn): Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (res_cnn): Sequential(
+    (0): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (1): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (2): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (3): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (4): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+  )
+  (fc): Linear(in_features=2048, out_features=512, bias=True)
+  (rnn): Sequential(
+    (0): RNN(
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (gru): GRU(512, 512, batch_first=True, bidirectional=True)
+      (dropout): Dropout(p=0.2, inplace=False)
+    )
+    (1): RNN(
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (gru): GRU(1024, 512, bidirectional=True)
+      (dropout): Dropout(p=0.2, inplace=False)
+    )
+    (2): RNN(
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (gru): GRU(1024, 512, bidirectional=True)
+      (dropout): Dropout(p=0.2, inplace=False)
+    )
+    (3): RNN(
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (gru): GRU(1024, 512, bidirectional=True)
+      (dropout): Dropout(p=0.2, inplace=False)
+    )
+    (4): RNN(
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (gru): GRU(1024, 512, bidirectional=True)
+      (dropout): Dropout(p=0.2, inplace=False)
+    )
+  )
+  (dense): Sequential(
+    (0): Linear(in_features=1024, out_features=512, bias=True)
+    (1): ReLU()
+    (2): Dropout(p=0.2, inplace=False)
+    (3): Linear(in_features=512, out_features=29, bias=True)
+  )
+)
 ```
 
 

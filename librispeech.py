@@ -54,7 +54,7 @@ torch.manual_seed(7)
 train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, collate_fn=collate, pin_memory=True)
 validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False, collate_fn=collate, pin_memory=True)
 # ================================================= MODEL ==============================================================
-model = SpeechRecognitionModel(n_cnn_layers=3, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128).to(dev)
+model = SpeechRecognitionModel(n_cnn_layers=5, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128).to(dev)
 
 
 # ================================================ TRAINING MODEL ======================================================
@@ -115,8 +115,9 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
 
 
 summary(model, (1, 128, 1344))
+print(model)
 print("Training...")
-fit(model=model, epochs=10, train_data_loader=train_loader, valid_data_loader=validation_loader)
+fit(model=model, epochs=15, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================
