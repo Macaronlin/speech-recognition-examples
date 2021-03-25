@@ -1,5 +1,4 @@
 import os
-
 import torch
 from ds_ctcdecoder import Alphabet, ctc_beam_search_decoder, Scorer
 from torch import nn
@@ -23,7 +22,8 @@ class RNN(nn.Module):
         super(RNN, self).__init__()
         self.norm = nn.LayerNorm(rnn_dim)
         self.relu = nn.ReLU()
-        self.gru = nn.GRU(input_size=rnn_dim, hidden_size=hidden_size, num_layers=1, batch_first=batch_first, bidirectional=True)
+        self.gru = nn.GRU(input_size=rnn_dim, hidden_size=hidden_size, num_layers=1,
+                          batch_first=batch_first, bidirectional=True)
         self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
@@ -52,7 +52,8 @@ class SpeechRecognitionModel(nn.Module):
             nn.Linear(rnn_dim, n_class)
         )
         self.alphabet = Alphabet(os.path.abspath("chars.txt"))
-        self.scorer = Scorer(alphabet=self.alphabet, scorer_path='librispeech.scorer', alpha=0.75, beta=1.85)
+        self.scorer = Scorer(alphabet=self.alphabet,
+                             scorer_path='librispeech.scorer', alpha=0.75, beta=1.85)
 
     def forward(self, x):
         x = self.res_cnn(self.cnn(x))
@@ -67,5 +68,6 @@ class SpeechRecognitionModel(nn.Module):
             softmax_out = out.softmax(2).cpu().numpy()
             char_list = []
             for i in range(softmax_out.shape[0]):
-                char_list.append(ctc_beam_search_decoder(probs_seq=softmax_out[i, :], alphabet=self.alphabet, scorer=self.scorer, beam_size=25)[0][1])
+                char_list.append(ctc_beam_search_decoder(probs_seq=softmax_out[i, :], alphabet=self.alphabet,
+                                                         scorer=self.scorer, beam_size=25)[0][1])
         return char_list
