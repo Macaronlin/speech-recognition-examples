@@ -1,7 +1,7 @@
 ## Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
 
 ### Architecture
-```sh
+```py
 SpeechRecognitionModel(
   (cnn): Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
   (res_cnn): Sequential(
