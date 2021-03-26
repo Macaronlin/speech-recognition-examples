@@ -90,7 +90,7 @@ SpeechRecognitionModel(
 
 
 ### Training
-<img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/training.png" width="667"/>  
+<img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/training.png" width="773"/>  
 
 ### Results
 <img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/results.png" width="1000"/>  
