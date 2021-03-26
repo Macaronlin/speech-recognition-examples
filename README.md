@@ -1,4 +1,4 @@
-## LibriSpeech Dataset Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
+## Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
 
 ### Architecture
 ```sh
