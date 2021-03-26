@@ -3,7 +3,9 @@
 ### Architecture
 ```py
 SpeechRecognitionModel(
+  # First convolutional layer
   (cnn): Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  # 5 blocks of convolutional layers with residual connections
   (res_cnn): Sequential(
     (0): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
@@ -36,7 +38,9 @@ SpeechRecognitionModel(
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
   )
+  # Single linear layer to tie CNN and RNN parts together
   (fc): Linear(in_features=2048, out_features=512, bias=True)
+  # 5 blocks of recurrent layers
   (rnn): Sequential(
     (0): RNN(
       (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
@@ -69,6 +73,8 @@ SpeechRecognitionModel(
       (dropout): Dropout(p=0.2, inplace=False)
     )
   )
+  # Two fully connected layers to convert the output of RNN layers to a probability 
+  # distribution for each vertical feature vector and each character
   (dense): Sequential(
     (0): Linear(in_features=1024, out_features=512, bias=True)
     (1): ReLU()
