@@ -1,4 +1,4 @@
-## Audio Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
+## Speech Recognition Using CRNN, CTC Loss, DeepSpeech Beam Search and KenLM Scorer
 
 [![medium](https://aleen42.github.io/badges/src/medium.svg)](https://dredwardhyde.medium.com/audio-recognition-using-crnn-ctc-loss-beam-search-decoder-and-kenlm-scorer-24472e43fb2f)
 ![Python3.8.6](https://img.shields.io/badge/Python-3.8.6-blue.svg)
