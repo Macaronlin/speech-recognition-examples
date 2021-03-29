@@ -16,43 +16,43 @@ SpeechRecognitionModel(
   (res_cnn): Sequential(
     (0): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (1): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (2): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (3): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (4): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (5): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (6): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (dropout): Dropout(p=0.2, inplace=False)
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
@@ -63,31 +63,31 @@ SpeechRecognitionModel(
   (rnn): Sequential(
     (0): RNN(
       (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (gru): GRU(512, 512, batch_first=True, bidirectional=True)
       (dropout): Dropout(p=0.2, inplace=False)
     )
     (1): RNN(
       (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (gru): GRU(1024, 512, bidirectional=True)
       (dropout): Dropout(p=0.2, inplace=False)
     )
     (2): RNN(
       (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (gru): GRU(1024, 512, bidirectional=True)
       (dropout): Dropout(p=0.2, inplace=False)
     )
     (3): RNN(
       (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (gru): GRU(1024, 512, bidirectional=True)
       (dropout): Dropout(p=0.2, inplace=False)
     )
     (4): RNN(
       (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
-      (relu): ReLU()
+      (gelu): GELU()
       (gru): GRU(1024, 512, bidirectional=True)
       (dropout): Dropout(p=0.2, inplace=False)
     )
@@ -96,7 +96,7 @@ SpeechRecognitionModel(
   # distribution for each vertical feature vector and each character
   (dense): Sequential(
     (0): Linear(in_features=1024, out_features=512, bias=True)
-    (1): ReLU()
+    (1): GELU()
     (2): Dropout(p=0.2, inplace=False)
     (3): Linear(in_features=512, out_features=29, bias=True)
   )
