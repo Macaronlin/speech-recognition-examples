@@ -13,3 +13,4 @@ torchvision==0.9.0+cu111
 torchaudio===0.8.0
 PySoundFile==0.9.0.post1
 torchsummary==1.5.1
+jiwer==2.2.0

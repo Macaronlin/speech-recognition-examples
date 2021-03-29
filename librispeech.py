@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torchsummary import summary
 from model import SpeechRecognitionModel
+from jiwer import wer
 
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -54,7 +55,7 @@ torch.manual_seed(7)
 train_loader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, collate_fn=collate, pin_memory=True)
 validation_loader = DataLoader(test_dataset, batch_size=validation_batch_size, shuffle=False, collate_fn=collate, pin_memory=True)
 # ================================================= MODEL ==============================================================
-model = SpeechRecognitionModel(n_cnn_layers=5, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128).to(dev)
+model = SpeechRecognitionModel(n_cnn_layers=7, n_rnn_layers=5, rnn_dim=512, n_class=len(classes) + 1, n_feats=128).to(dev)
 
 
 # ================================================ TRAINING MODEL ======================================================
@@ -68,6 +69,8 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
         batch_n = 1
         train_levenshtein = 0
         len_levenshtein = 0
+        all_train_decoded = []
+        all_train_actual = []
         for spectrograms, labels, input_lengths, label_lengths in tqdm(train_data_loader,
                                                                        position=0, leave=True,
                                                                        file=sys.stdout,
@@ -85,6 +88,8 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                     decoded = model.beam_search_with_lm(spectrograms)
                     for j in range(0, len(decoded)):
                         actual = num_to_str(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                        all_train_decoded.append(decoded[j])
+                        all_train_actual.append(actual)
                         train_levenshtein += leven.distance(decoded[j], actual)
                         len_levenshtein += label_lengths[j]
 
@@ -94,6 +99,8 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
         with torch.no_grad():
             val_levenshtein = 0
             target_lengths = 0
+            all_valid_decoded = []
+            all_valid_actual = []
             for spectrograms, labels, input_lengths, label_lengths in tqdm(valid_data_loader,
                                                                            position=0, leave=True,
                                                                            file=sys.stdout,
@@ -103,11 +110,14 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                 decoded = model.beam_search_with_lm(spectrograms)
                 for j in range(0, len(decoded)):
                     actual = num_to_str(labels.cpu().numpy()[j][:label_lengths[j]].tolist())
+                    all_valid_decoded.append(decoded[j])
+                    all_valid_actual.append(actual)
                     val_levenshtein += leven.distance(decoded[j], actual)
                     target_lengths += label_lengths[j]
 
-        print('Epoch {}: Training Levenshtein {} | Validation Levenshtein {}'
-              .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths), end='\n')
+        print('Epoch {}: Training Levenshtein {} | Validation Levenshtein {} | Training WER {} | Validation WER {}'
+              .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths,
+                      wer(all_train_actual, all_train_decoded), wer(all_valid_actual, all_valid_decoded)), end='\n')
         # ============================================ SAVE MODEL ======================================================
         if (val_levenshtein / target_lengths) < best_leven:
             torch.save(model.state_dict(), f=str((val_levenshtein / target_lengths) * 100).replace('.', '_') + '_' + 'model.pth')
@@ -117,7 +127,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
 summary(model, (1, 128, 1344))
 print(model)
 print("Training...")
-fit(model=model, epochs=15, train_data_loader=train_loader, valid_data_loader=validation_loader)
+fit(model=model, epochs=25, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
 # ============================================ TESTING =================================================================

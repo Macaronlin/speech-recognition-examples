@@ -8,26 +8,26 @@ class ResidualCNN(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, n_feats):
         super(ResidualCNN, self).__init__()
         self.norm = nn.LayerNorm(n_feats)
-        self.relu = nn.ReLU()
+        self.gelu = nn.GELU()
         self.dropout = nn.Dropout(0.2)
         self.conv = nn.Conv2d(in_channels, out_channels, kernel, padding=kernel // 2)
 
     def forward(self, x):
         x = self.norm(x.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
-        return self.conv(self.dropout(self.relu(x))) + x
+        return self.conv(self.dropout(self.gelu(x))) + x
 
 
 class RNN(nn.Module):
     def __init__(self, rnn_dim, hidden_size, batch_first):
         super(RNN, self).__init__()
         self.norm = nn.LayerNorm(rnn_dim)
-        self.relu = nn.ReLU()
+        self.gelu = nn.GELU()
         self.gru = nn.GRU(input_size=rnn_dim, hidden_size=hidden_size, num_layers=1,
                           batch_first=batch_first, bidirectional=True)
         self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
-        x, _ = self.gru(self.relu(self.norm(x)))
+        x, _ = self.gru(self.gelu(self.norm(x)))
         return self.dropout(x)
 
 
@@ -47,7 +47,7 @@ class SpeechRecognitionModel(nn.Module):
         ])
         self.dense = nn.Sequential(
             nn.Linear(rnn_dim * 2, rnn_dim),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Dropout(0.2),
             nn.Linear(rnn_dim, n_class)
         )

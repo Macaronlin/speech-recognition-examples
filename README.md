@@ -12,7 +12,7 @@
 SpeechRecognitionModel(
   # First convolutional layer
   (cnn): Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-  # 5 blocks of convolutional layers with residual connections
+  # 7 blocks of convolutional layers with residual connections
   (res_cnn): Sequential(
     (0): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
@@ -39,6 +39,18 @@ SpeechRecognitionModel(
       (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
     )
     (4): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (5): ResidualCNN(
+      (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+      (relu): ReLU()
+      (dropout): Dropout(p=0.2, inplace=False)
+      (conv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    )
+    (6): ResidualCNN(
       (norm): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
       (relu): ReLU()
       (dropout): Dropout(p=0.2, inplace=False)
