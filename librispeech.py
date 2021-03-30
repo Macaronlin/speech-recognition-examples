@@ -127,6 +127,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
 summary(model, (1, 128, 1344))
 print(model)
 print("Training...")
+# model.load_state_dict(torch.load('./weights.pth'))
 fit(model=model, epochs=25, train_data_loader=train_loader, valid_data_loader=validation_loader)
 
 
