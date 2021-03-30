@@ -127,7 +127,7 @@ python3 generate_lm.py --input_txt librispeech-lm-norm.txt.gz --output_dir . \
 ```
 
 ### Training
-<img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/training.png" width="773"/>  
+<img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/training.png" width="618"/>  
 
 ### Results
 <img src="https://raw.githubusercontent.com/dredwardhyde/audio-recognition/main/results/results.png" width="1000"/>  

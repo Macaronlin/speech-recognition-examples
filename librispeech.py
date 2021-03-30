@@ -115,7 +115,7 @@ def fit(model, epochs, train_data_loader, valid_data_loader):
                     val_levenshtein += leven.distance(decoded[j], actual)
                     target_lengths += label_lengths[j]
 
-        print('Epoch {}: Training Levenshtein {} | Validation Levenshtein {} | Training WER {} | Validation WER {}'
+        print('Epoch {}: Levenshtein Train: {:.4f} Valid: {:.4f} | WER  Train: {:.4f} | Valid: {:.4f}'
               .format(i, train_levenshtein / len_levenshtein, val_levenshtein / target_lengths,
                       wer(all_train_actual, all_train_decoded), wer(all_valid_actual, all_valid_decoded)), end='\n')
         # ============================================ SAVE MODEL ======================================================
