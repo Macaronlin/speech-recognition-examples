@@ -10,11 +10,10 @@ test_dataset = torchaudio.datasets.LIBRISPEECH("./data", url="test-clean", downl
 decoded = []
 original = []
 
-for i in range(40):
-    waveform, _, utterance, _, _, _ = test_dataset[i]
+for waveform, _, utterance, _, _, _ in test_dataset:
     input_values = tokenizer(waveform.numpy().squeeze(0), return_tensors="pt", padding="longest").input_values
     decoded.append(tokenizer.batch_decode(torch.argmax(model(input_values.to("cuda")).logits, dim=-1))[0])
     original.append(utterance)
 
-# 0.010767160161507403
-print(wer(original, decoded))
+# 2.7693244065733413
+print(wer(original, decoded) * 100)
