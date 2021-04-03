@@ -25,6 +25,6 @@ def voice_handler(update, context):
                              text=processor.batch_decode(torch.argmax(logits, dim=-1))[0].lower())
 
 
-updater = Updater(token='1180056473:AAEuNoc5GFcLHDZTae-CXSSwYZAaX909ra4')
+updater = Updater(token='TOKEN')
 updater.dispatcher.add_handler(MessageHandler(Filters.voice, voice_handler))
 updater.start_polling()
