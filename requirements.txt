@@ -15,3 +15,5 @@ PySoundFile==0.9.0.post1
 torchsummary==1.5.1
 jiwer==2.2.0
 transformers==4.4.2
+pydub==0.25.1
+python-telegram-bot==13.4.1
