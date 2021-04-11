@@ -28,10 +28,7 @@ config = {
         "type": "AdamW",
         "params": {
             "lr": 0.001,
-            "betas": [
-                0.9,
-                0.999
-            ],
+            "betas": [0.9, 0.999],
             "eps": 1e-6
         }
     }
@@ -45,8 +42,8 @@ decoded = []
 original = []
 
 for waveform, _, utterance, _, _, _ in test_dataset:
-    input_values = tokenizer(waveform.numpy().squeeze(0), return_tensors="pt", padding="longest").input_values.to(torch.float16)
-    decoded.append(tokenizer.batch_decode(torch.argmax(model(input_values.to("cuda")).logits, dim=-1))[0])
+    input_values = tokenizer(waveform.numpy().squeeze(0), return_tensors="pt", padding="longest").input_values
+    decoded.append(tokenizer.batch_decode(torch.argmax(model(input_values.to(torch.float16).to("cuda")).logits, dim=-1))[0])
     original.append(utterance)
 
 # 2.7712264150943398
