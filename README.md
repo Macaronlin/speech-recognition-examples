@@ -7,6 +7,13 @@
 [**Pretrained wieghts**](https://github.com/dredwardhyde/audio-recognition/blob/main/weights.pth)  
 [**Generated Librispeech KenLM scorer**](https://github.com/dredwardhyde/audio-recognition/blob/main/librispeech.scorer)  
 
+### Installation
+```sh
+cd venv/bin
+./pip install -r ../../requirements.txt 
+./pip install deepspeed==0.3.13
+```
+
 ### Architecture
 ```py
 SpeechRecognitionModel(
