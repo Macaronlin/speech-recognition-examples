@@ -21,14 +21,14 @@ config = {
     "train_batch_size": 40,
     "fp16": {
         "enabled": True,
-        "opt_level": "O1"
+        "opt_level": "O2"
     },
     "zero_optimization": {
-        "stage": 0,
-        # "cpu_offload": True,
-        # "cpu_offload_params": True,
-        # "contiguous_gradients": True,
-        # "overlap_comm": True
+        "stage": 2,
+        "cpu_offload": True,
+        "cpu_offload_params": True,
+        "contiguous_gradients": True,
+        "overlap_comm": True
     },
     "optimizer": {
         "type": "AdamW",
